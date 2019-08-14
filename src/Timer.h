@@ -3,13 +3,15 @@
 #pragma once
 
 #include <string>
-
-#include <string>
+#include <map>
 #include "PriorityQueue.h"
 
 extern "C" {
 #include "cq.h"
 }
+
+struct uv_timer_s;
+typedef uv_timer_s uv_timer_t;
 
 // If you add a timer here, adjust TimerNames in Timer.cc.
 enum TimerType {
@@ -67,7 +69,7 @@ public:
 protected:
 	Timer()	{}
 
-	unsigned int type:8;
+	uint8_t type;
 };
 
 class TimerMgr {
@@ -99,8 +101,8 @@ public:
  	typedef std::string Tag;
  	const Tag& GetTag() const 	{ return tag; }
 
-	virtual int Size() const = 0;
-	virtual int PeakSize() const = 0;
+	virtual size_t Size() const = 0;
+	virtual size_t PeakSize() const = 0;
 	virtual uint64_t CumulativeNum() const = 0;
 
 	double LastTimestamp() const	{ return last_timestamp; }
@@ -131,6 +133,40 @@ protected:
 	static unsigned int current_timers[NUM_TIMER_TYPES];
 };
 
+class UV_TimerMgr : public TimerMgr {
+public:
+
+	UV_TimerMgr(const Tag& arg_tag) : TimerMgr(arg_tag) {}
+	~UV_TimerMgr() override = default;
+
+	virtual void Add(Timer* timer) override;
+	
+	virtual void Expire() override;
+	virtual size_t Size() const override { return static_cast<int>(timers.size()); }
+	virtual size_t PeakSize() const override { return peak_size; }
+	virtual uint64_t CumulativeNum() const override { return cumulative; }
+
+	void Dispatch(Timer* handle);
+
+private:
+
+	virtual int DoAdvance(double t, int max_expire) override { return 0; }
+	virtual void Remove(Timer* timer) override;
+
+	using TimerMap = std::map<Timer*, uv_timer_t*>;
+	void Dispatch(TimerMap::const_iterator entry, bool is_expire);
+
+	TimerMap timers;
+
+	size_t peak_size = 0;
+	uint64_t cumulative = 0;
+};
+
+/**
+ * Priority queue-based timer manager. This keeps the timers in a queue based
+ * their start time. This allows the manager to simply pull all of the timers
+ * off the front of the queue that are below the next expiration time.
+ */
 class PQ_TimerMgr : public TimerMgr {
 public:
 	explicit PQ_TimerMgr(const Tag& arg_tag);
@@ -139,8 +175,8 @@ public:
 	void Add(Timer* timer) override;
 	void Expire() override;
 
-	int Size() const override { return q->Size(); }
-	int PeakSize() const override { return q->PeakSize(); }
+	size_t Size() const override { return q->Size(); }
+	size_t PeakSize() const override { return q->PeakSize(); }
 	uint64_t CumulativeNum() const override { return q->CumulativeNum(); }
 
 protected:
@@ -161,8 +197,8 @@ public:
 	void Add(Timer* timer) override;
 	void Expire() override;
 
-	int Size() const override { return cq_size(cq); }
-	int PeakSize() const override { return cq_max_size(cq); }
+	size_t Size() const override { return cq_size(cq); }
+	size_t PeakSize() const override { return cq_max_size(cq); }
 	uint64_t CumulativeNum() const override { return cq_cumulative_num(cq); }
 	unsigned int MemoryUsage() const;
 
