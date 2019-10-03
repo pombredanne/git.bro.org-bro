@@ -117,13 +117,13 @@ protected:
 	void ParseContentEncoding(data_chunk_t encoding_mechanism);
 
 	void BeginBody();
-	void NewDataLine(int len, const char* data, int trailing_CRLF);
+	void NewDataLine(uint64_t len, const char* data, int trailing_CRLF);
 
-	int CheckBoundaryDelimiter(int len, const char* data);
-	void DecodeDataLine(int len, const char* data, int trailing_CRLF);
-	void DecodeBinary(int len, const char* data, int trailing_CRLF);
-	void DecodeQuotedPrintable(int len, const char* data);
-	void DecodeBase64(int len, const char* data);
+	int CheckBoundaryDelimiter(uint64_t len, const char* data);
+	void DecodeDataLine(uint64_t len, const char* data, int trailing_CRLF);
+	void DecodeBinary(uint64_t len, const char* data, int trailing_CRLF);
+	void DecodeQuotedPrintable(uint64_t len, const char* data);
+	void DecodeBase64(uint64_t len, const char* data);
 	void StartDecodeBase64();
 	void FinishDecodeBase64();
 

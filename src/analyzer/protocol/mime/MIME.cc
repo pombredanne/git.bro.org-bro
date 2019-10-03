@@ -669,7 +669,7 @@ void MIME_Entity::EndOfData()
 	message->EndEntity (this);
 	}
 
-void MIME_Entity::NewDataLine(int len, const char* data, int trailing_CRLF)
+void MIME_Entity::NewDataLine(uint64_t len, const char* data, int trailing_CRLF)
 	{
 	if ( content_type == CONTENT_TYPE_MULTIPART )
 		{
@@ -960,7 +960,7 @@ void MIME_Entity::ParseContentEncoding(data_chunk_t encoding_mechanism)
 	content_encoding = i;
 	}
 
-int MIME_Entity::CheckBoundaryDelimiter(int len, const char* data)
+int MIME_Entity::CheckBoundaryDelimiter(uint64_t len, const char* data)
 	{
 	if ( ! multipart_boundary )
 		{
@@ -1000,7 +1000,7 @@ int MIME_Entity::CheckBoundaryDelimiter(int len, const char* data)
 // trailing_CRLF indicates whether an implicit CRLF sequence follows data
 // (the CRLF sequence is not included in data).
 
-void MIME_Entity::DecodeDataLine(int len, const char* data, int trailing_CRLF)
+void MIME_Entity::DecodeDataLine(uint64_t len, const char* data, int trailing_CRLF)
 	{
 	if ( ! mime_submit_data )
 		return;
@@ -1024,7 +1024,7 @@ void MIME_Entity::DecodeDataLine(int len, const char* data, int trailing_CRLF)
 	FlushData();
 	}
 
-void MIME_Entity::DecodeBinary(int len, const char* data, int trailing_CRLF)
+void MIME_Entity::DecodeBinary(uint64_t len, const char* data, int trailing_CRLF)
 	{
 	if ( delay_adding_implicit_CRLF )
 		{
@@ -1056,15 +1056,15 @@ void MIME_Entity::DecodeBinary(int len, const char* data, int trailing_CRLF)
 		}
 	}
 
-void MIME_Entity::DecodeQuotedPrintable(int len, const char* data)
+void MIME_Entity::DecodeQuotedPrintable(uint64_t len, const char* data)
 	{
 	// Ignore trailing HT and SP.
-	int i;
+	uint64_t i;
 	for ( i = len - 1; i >= 0; --i )
 		if ( data[i] != HT && data[i] != SP )
 			break;
 
-	int end_of_line = i;
+	uint64_t end_of_line = i;
 	int soft_line_break = 0;
 
 	for ( i = 0; i <= end_of_line; ++i )
@@ -1122,16 +1122,16 @@ void MIME_Entity::DecodeQuotedPrintable(int len, const char* data)
 		}
 	}
 
-void MIME_Entity::DecodeBase64(int len, const char* data)
+void MIME_Entity::DecodeBase64(uint64_t len, const char* data)
 	{
-	int rlen;
+	uint64_t rlen;
 	char rbuf[128];
 
 	while ( len > 0 )
 		{
 		rlen = 128;
 		char* prbuf = rbuf;
-		int decoded = base64_decoder->Decode(len, data, &rlen, &prbuf);
+		uint64_t decoded = base64_decoder->Decode(len, data, &rlen, &prbuf);
 		DataOctets(rlen, rbuf);
 		len -= decoded; data += decoded;
 		}
@@ -1161,7 +1161,7 @@ void MIME_Entity::FinishDecodeBase64()
 	if ( ! base64_decoder )
 		return;
 
-	int rlen = 128;
+	uint64_t rlen = 128;
 	char rbuf[128];
 	char* prbuf = rbuf;
 
